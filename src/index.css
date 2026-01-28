@@ -1,0 +1,63 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #070707;
+  color: #FFFFFF;
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+/* Стили для выпадающего списка стран PhoneInput */
+.PhoneInputCountrySelect {
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+.PhoneInputCountryIcon {
+  border-radius: 6px;
+}
+
+/* Стили для выпадающего меню выбора страны */
+.PhoneInputCountryIcon--border {
+  border: none;
+}
+
+/* Стили для выпадающего списка */
+.PhoneInputCountrySelectDropdown {
+  background-color: rgba(0, 0, 0, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 13px !important;
+  backdrop-filter: blur(10px);
+}
+
+.PhoneInputCountrySelectOption {
+  color: #FFFFFF !important;
+  font-family: 'Montserrat', sans-serif !important;
+  padding: 10px 15px !important;
+}
+
+.PhoneInputCountrySelectOption:hover,
+.PhoneInputCountrySelectOption--selected {
+  background-color: rgba(144, 246, 1, 0.2) !important;
+}
+
+/* Глобальные стили для select элементов (выпадающий список стран) */
+select.PhoneInputCountrySelect {
+  color: #FFFFFF !important;
+  background-color: transparent !important;
+}
+
+select.PhoneInputCountrySelect option {
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  font-family: 'Montserrat', sans-serif !important;
+  padding: 8px 12px !important;
+}
+
+select.PhoneInputCountrySelect option:hover,
+select.PhoneInputCountrySelect option:checked {
+  background-color: rgba(144, 246, 1, 0.3) !important;
+  color: #FFFFFF !important;
+}
