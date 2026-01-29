@@ -623,19 +623,9 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 						<Button
 							type='submit'
 							variant='contained'
-							disabled={loading || !isPhoneValid}
-							onClick={(e) => {
-								if (!loading && isPhoneValid && name.trim() && phone) {
-									// Обработка уже есть в форме через onSubmit
-								}
-							}}
-							onTouchStart={(e) => {
-								if (!loading && isPhoneValid && name.trim() && phone) {
-									e.stopPropagation()
-								}
-							}}
+							disabled={loading}
 							onTouchEnd={(e) => {
-								if (!loading && isPhoneValid && name.trim() && phone) {
+								if (!loading) {
 									e.preventDefault()
 									e.stopPropagation()
 									const syntheticEvent = {
@@ -660,6 +650,7 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 								WebkitTapHighlightColor: 'transparent',
 								position: 'relative',
 								zIndex: 1,
+								cursor: loading ? 'not-allowed' : 'pointer',
 								'&:disabled': {
 									backgroundColor: '#90F601',
 									opacity: 0.6,
