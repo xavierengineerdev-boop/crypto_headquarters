@@ -13,7 +13,6 @@ import { Box } from '@mui/material'
 import { ToastContainer } from 'react-toastify'
 import { createContext, useContext, useState } from 'react'
 
-// Создаем контекст для управления SuccessOverlay
 interface SuccessOverlayContextType {
 	showSuccessOverlay: () => string
 	currentOrderNumber: string
@@ -36,7 +35,6 @@ const App = () => {
 	const [successOverlayOpen, setSuccessOverlayOpen] = useState(false)
 	const [currentOrderNumber, setCurrentOrderNumber] = useState<string>('')
 
-	// Функция генерации 6-значного номера заявки
 	const generateOrderNumber = () => {
 		return Math.floor(100000 + Math.random() * 900000).toString()
 	}
@@ -52,7 +50,6 @@ const App = () => {
 		setSuccessOverlayOpen(false)
 		setCurrentOrderNumber('')
 		
-		// Прокручиваем страницу наверх после закрытия overlay
 		setTimeout(() => {
 			window.scrollTo({ top: 0, behavior: 'smooth' })
 		}, 100)
@@ -91,7 +88,6 @@ const App = () => {
 					<Footer />
 				</Box>
 
-				{/* Полноэкранное уведомление об успехе */}
 				<SuccessOverlay
 					open={successOverlayOpen}
 					onClose={hideSuccessOverlay}

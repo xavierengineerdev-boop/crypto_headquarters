@@ -17,14 +17,11 @@ const QuestionBlock = () => {
 	const phoneInputRef = useRef<HTMLDivElement>(null)
 	const { showSuccessOverlay, currentOrderNumber, successOverlayOpen } = useSuccessOverlay()
 
-	// Определение страны по IP (приоритет IP API для работы с VPN)
 	useEffect(() => {
 		const detectCountry = async () => {
-			// Используем несколько API для определения по IP (это работает с VPN)
 			const timestamp = Date.now()
 			const countryResults: string[] = []
 
-			// API 1: ip-api.com (может возвращать 403 при частых запросах)
 			try {
 				const response = await fetch(`https://ip-api.com/json/?fields=countryCode&_=${timestamp}`, {
 					method: 'GET',
@@ -41,10 +38,8 @@ const QuestionBlock = () => {
 					}
 				}
 			} catch (apiError) {
-				// Игнорируем ошибку (403, CORS и т.д.)
 			}
 
-			// API 2: ipapi.co (может возвращать 429 при частых запросах и CORS ошибки)
 			try {
 				const response = await fetch(`https://ipapi.co/json/?_=${timestamp}`, {
 					method: 'GET',
@@ -60,10 +55,8 @@ const QuestionBlock = () => {
 					}
 				}
 			} catch (apiError) {
-				// Игнорируем ошибку (429, CORS и т.д.)
 			}
 
-			// API 3: ipwho.is (более надежный, без лимитов)
 			try {
 				const response = await fetch(`https://ipwho.is/?_=${timestamp}`, {
 					method: 'GET',
@@ -79,10 +72,8 @@ const QuestionBlock = () => {
 					}
 				}
 			} catch (apiError) {
-				// Игнорируем ошибку
 			}
 
-			// Выбираем наиболее частый результат
 			if (countryResults.length > 0) {
 				const countryCounts: Record<string, number> = {}
 				countryResults.forEach(country => {
@@ -107,7 +98,6 @@ const QuestionBlock = () => {
 				return
 			}
 
-			// Если IP API не сработали, пробуем через timezone как запасной вариант
 			try {
 				const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 				const timezoneToCountry: Record<string, string> = {
@@ -140,10 +130,8 @@ const QuestionBlock = () => {
 					return
 				}
 			} catch (tzError) {
-				// Игнорируем ошибку
 			}
 
-			// Пробуем через Intl API для определения региона
 			try {
 				const locale = Intl.DateTimeFormat().resolvedOptions().locale
 				if (locale) {
@@ -154,10 +142,8 @@ const QuestionBlock = () => {
 					}
 				}
 			} catch (e) {
-				// Игнорируем ошибку
 			}
 
-			// Пробуем через navigator.language как последний вариант
 			try {
 				const locale = navigator.language || (navigator as any).userLanguage
 				if (locale) {
@@ -171,14 +157,12 @@ const QuestionBlock = () => {
 					}
 				}
 			} catch (e) {
-				// Игнорируем ошибку
 			}
 		}
 
 		detectCountry()
 	}, [])
 
-	// Блокировка ввода лишних символов через DOM события
 	useEffect(() => {
 		if (!phoneInputRef.current || !defaultCountry || !phone) return
 
@@ -188,17 +172,13 @@ const QuestionBlock = () => {
 		const handleBeforeInput = (e: any) => {
 			const currentValue = input.value || phone
 			
-			// Проверяем, может ли новый номер быть возможным
 			if (defaultCountry) {
-				// Создаем временное значение с новым символом
 				const testValue = currentValue.slice(0, input.selectionStart || 0) + 
 					(e.data || '') + 
 					currentValue.slice(input.selectionEnd || 0)
 				
-				// Используем утилиту для проверки
 				if (!canAddMoreDigits(testValue, defaultCountry as CountryCode) || 
 					exceedsMaxLength(testValue, defaultCountry as CountryCode)) {
-					// Номер превысит максимум - блокируем ввод
 					e.preventDefault()
 					return false
 				}
@@ -209,10 +189,8 @@ const QuestionBlock = () => {
 			const currentValue = input.value
 			
 			if (defaultCountry && currentValue) {
-				// Используем утилиту для проверки
 				if (!canAddMoreDigits(currentValue, defaultCountry as CountryCode) || 
 					exceedsMaxLength(currentValue, defaultCountry as CountryCode)) {
-					// Восстанавливаем предыдущее значение
 					setTimeout(() => {
 						if (input && phone) {
 							input.value = phone
@@ -232,46 +210,36 @@ const QuestionBlock = () => {
 		}
 	}, [phone, defaultCountry])
 
-	// Валидация номера телефона с проверкой длины для выбранной страны
 	useEffect(() => {
 		if (phone && defaultCountry) {
 			let finalIsValid = false
 			
 			try {
-				// Сначала проверяем длину через parsePhoneNumber
 				const phoneNumber = parsePhoneNumber(phone, defaultCountry as CountryCode)
 				if (phoneNumber) {
 					const rules = getPhoneValidationRules(defaultCountry as CountryCode)
 					if (rules) {
 						const nationalNumberLength = phoneNumber.nationalNumber.length
 						
-						// Номер должен иметь правильную длину (минимум для страны)
 						if (nationalNumberLength < rules.minLength) {
-							// Номер слишком короткий - невалиден
 							finalIsValid = false
 						} else if (nationalNumberLength > rules.maxLength) {
-							// Номер слишком длинный - невалиден
 							finalIsValid = false
 						} else {
-							// Длина правильная, проверяем валидность через isValidPhoneNumber
 							finalIsValid = isValidPhoneNumber(phone, defaultCountry as CountryCode)
 						}
 					} else {
-						// Если нет правил, используем стандартную проверку
 						finalIsValid = isValidPhoneNumber(phone, defaultCountry as CountryCode)
 					}
 				} else {
-					// Если не удалось распарсить, номер невалиден
 					finalIsValid = false
 				}
 			} catch {
-				// Если произошла ошибка при парсинге, номер невалиден
 				finalIsValid = false
 			}
 			
 			setIsPhoneValid(finalIsValid)
 		} else if (phone) {
-			// Если страна не определена, проверяем общую валидность
 			const isValid = isValidPhoneNumber(phone)
 			setIsPhoneValid(isValid)
 		} else {
@@ -281,17 +249,14 @@ const QuestionBlock = () => {
 
 	const [submittedOrderNumber, setSubmittedOrderNumber] = useState<string | null>(null)
 
-	// Отслеживаем открытие overlay
 	useEffect(() => {
 		if (successOverlayOpen && currentOrderNumber) {
 			setSubmittedOrderNumber(currentOrderNumber)
 		}
 	}, [successOverlayOpen, currentOrderNumber])
 
-	// Очистка формы после закрытия SuccessOverlay
 	useEffect(() => {
 		if (submittedOrderNumber && !successOverlayOpen) {
-			// Overlay был открыт и теперь закрылся, очищаем форму
 			setPhone('')
 			setSubmittedOrderNumber(null)
 		}
@@ -305,7 +270,6 @@ const QuestionBlock = () => {
 			return
 		}
 
-		// Проверка валидности номера телефона
 		if (!isPhoneValid) {
 			toast.error('Пожалуйста, введите полный номер телефона')
 			return
@@ -313,7 +277,6 @@ const QuestionBlock = () => {
 
 		setLoading(true)
 
-		// Генерируем номер заказа перед отправкой формы
 		const orderNumber = showSuccessOverlay()
 
 		try {
@@ -321,8 +284,6 @@ const QuestionBlock = () => {
 				phone: phone as string,
 				orderNumber: orderNumber,
 			})
-
-			// Поля очистятся после закрытия SuccessOverlay
 		} catch (err: any) {
 			toast.error(err.message || 'Произошла ошибка при отправке формы')
 		} finally {
@@ -450,17 +411,12 @@ const QuestionBlock = () => {
 
 							const country = defaultCountry as CountryCode | undefined
 							
-							// Используем утилиту для проверки
 							if (country) {
-								// Проверяем, можно ли добавить еще цифры
 								if (!canAddMoreDigits(value, country)) {
-									// Номер превысил максимум - блокируем ввод
 									return
 								}
 								
-								// Проверяем, превысил ли номер максимальную длину
 								if (exceedsMaxLength(value, country)) {
-									// Номер превысил максимум - блокируем ввод
 									return
 								}
 							}

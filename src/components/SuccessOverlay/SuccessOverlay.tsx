@@ -44,11 +44,10 @@ const SuccessOverlay = ({
 					height: '100vh',
 					p: '16px',
 					zIndex: 9999,
-					backgroundColor: 'rgba(0, 0, 0, 0.5)', // Уменьшена непрозрачность для лучшей видимости фона
+					backgroundColor: 'rgba(0, 0, 0, 0.5)',
 					backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
 					backgroundSize: 'cover',
 					backgroundPosition: 'center',
-					// backgroundBlendMode: 'multiply', // Временно отключен для проверки видимости
 					display: 'flex',
 					flexDirection: 'column',
 					alignItems: 'center',
@@ -56,7 +55,6 @@ const SuccessOverlay = ({
 					textAlign: 'center',
 				}}
 			>
-				{/* Основной контент */}
 				<Box
 					sx={{
 						maxWidth: '1075px',

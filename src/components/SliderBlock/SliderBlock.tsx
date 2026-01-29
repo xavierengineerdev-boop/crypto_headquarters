@@ -58,7 +58,6 @@ const SliderBlock = () => {
 							},
 						}}
 					>
-						{/* Дублируем слайды несколько раз для бесшовной прокрутки */}
 						{[...slides, ...slides, ...slides].map((slide, index) => (
 							<Box
 								key={index}

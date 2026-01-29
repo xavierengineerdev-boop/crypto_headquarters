@@ -1,7 +1,3 @@
-// Получаем URL API из переменных окружения
-// В Vite переменные окружения должны начинаться с VITE_
-// Для продакшена: https://api.noxprilend.org
-// Для разработки: http://localhost:3000
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.noxprilend.org'
 
 export interface FormData {

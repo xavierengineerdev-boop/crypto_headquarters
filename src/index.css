@@ -15,7 +15,6 @@ body {
   font-family: 'Montserrat', sans-serif !important;
 }
 
-/* Стили для выпадающего списка стран PhoneInput */
 .PhoneInputCountrySelect {
   font-family: 'Montserrat', sans-serif !important;
 }
@@ -24,12 +23,10 @@ body {
   border-radius: 6px;
 }
 
-/* Стили для выпадающего меню выбора страны */
 .PhoneInputCountryIcon--border {
   border: none;
 }
 
-/* Стили для выпадающего списка */
 .PhoneInputCountrySelectDropdown {
   background-color: rgba(0, 0, 0, 0.95) !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -48,7 +45,6 @@ body {
   background-color: rgba(144, 246, 1, 0.2) !important;
 }
 
-/* Глобальные стили для select элементов (выпадающий список стран) */
 select.PhoneInputCountrySelect {
   color: #FFFFFF !important;
   background-color: transparent !important;
