@@ -338,6 +338,8 @@ const QuestionBlock = () => {
 					alignItems: 'center',
 					border: '1px solid #90F601',
 					borderRadius: '13px',
+					position: 'relative',
+					zIndex: 0,
 					'& .PhoneInput': {
 						flex: 1,
 						display: 'flex',
@@ -441,10 +443,16 @@ const QuestionBlock = () => {
 						fontWeight: 700,
 						color: '#000000',
 						textTransform: 'none',
+						touchAction: 'manipulation',
+						WebkitTapHighlightColor: 'transparent',
 						'@media (max-width: 620px)': { display: 'none' },
 						'&:disabled': {
 							backgroundColor: '#90F601',
 							opacity: 0.6,
+							pointerEvents: 'none',
+						},
+						'&:active': {
+							opacity: 0.8,
 						},
 					}}
 				>
@@ -456,7 +464,26 @@ const QuestionBlock = () => {
 				disabled={loading || !isPhoneValid}
 				onClick={(e) => {
 					e.preventDefault()
-					handleSubmit(e as any)
+					e.stopPropagation()
+					if (!loading && isPhoneValid && phone) {
+						handleSubmit(e as any)
+					}
+				}}
+				onTouchStart={(e) => {
+					if (!loading && isPhoneValid && phone) {
+						e.stopPropagation()
+					}
+				}}
+				onTouchEnd={(e) => {
+					e.preventDefault()
+					e.stopPropagation()
+					if (!loading && isPhoneValid && phone) {
+						const syntheticEvent = {
+							preventDefault: () => {},
+							stopPropagation: () => {},
+						} as React.FormEvent
+						handleSubmit(syntheticEvent)
+					}
 				}}
 				sx={{
 					width: '355.64px',
@@ -469,10 +496,18 @@ const QuestionBlock = () => {
 					fontWeight: 700,
 					color: '#000000',
 					textTransform: 'none',
+					touchAction: 'manipulation',
+					WebkitTapHighlightColor: 'transparent',
+					position: 'relative',
+					zIndex: 1,
 					'@media (min-width: 621px)': { display: 'none' },
 					'&:disabled': {
 						backgroundColor: '#90F601',
 						opacity: 0.6,
+						pointerEvents: 'none',
+					},
+					'&:active': {
+						opacity: 0.8,
 					},
 				}}
 			>

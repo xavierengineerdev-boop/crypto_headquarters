@@ -13,6 +13,8 @@ body {
   background-color: #070707;
   color: #FFFFFF;
   font-family: 'Montserrat', sans-serif !important;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .PhoneInputCountrySelect {
@@ -61,4 +63,15 @@ select.PhoneInputCountrySelect option:hover,
 select.PhoneInputCountrySelect option:checked {
   background-color: rgba(144, 246, 1, 0.3) !important;
   color: #FFFFFF !important;
+}
+
+/* Улучшение работы touch событий на мобильных устройствах */
+button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Улучшение работы форм на мобильных устройствах */
+form {
+  touch-action: manipulation;
 }

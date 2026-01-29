@@ -624,6 +624,27 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 							type='submit'
 							variant='contained'
 							disabled={loading || !isPhoneValid}
+							onClick={(e) => {
+								if (!loading && isPhoneValid && name.trim() && phone) {
+									// Обработка уже есть в форме через onSubmit
+								}
+							}}
+							onTouchStart={(e) => {
+								if (!loading && isPhoneValid && name.trim() && phone) {
+									e.stopPropagation()
+								}
+							}}
+							onTouchEnd={(e) => {
+								if (!loading && isPhoneValid && name.trim() && phone) {
+									e.preventDefault()
+									e.stopPropagation()
+									const syntheticEvent = {
+										preventDefault: () => {},
+										stopPropagation: () => {},
+									} as React.FormEvent
+									handleSubmit(syntheticEvent)
+								}
+							}}
 							sx={{
 								width: '100%',
 								height: '61px',
@@ -635,9 +656,17 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 								fontWeight: 700,
 								color: '#000000',
 								textTransform: 'none',
+								touchAction: 'manipulation',
+								WebkitTapHighlightColor: 'transparent',
+								position: 'relative',
+								zIndex: 1,
 								'&:disabled': {
 									backgroundColor: '#90F601',
 									opacity: 0.6,
+									pointerEvents: 'none',
+								},
+								'&:active': {
+									opacity: 0.8,
 								},
 							}}
 						>
