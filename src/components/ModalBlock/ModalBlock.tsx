@@ -286,13 +286,53 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 
-		if (!name.trim() || !phone) {
-			toast.error('Пожалуйста, заполните обязательные поля')
+		// Более детальная проверка полей с учетом всех возможных значений
+		const nameTrimmed = (name && typeof name === 'string') ? name.trim() : ''
+		const phoneValue = (phone && typeof phone === 'string') ? phone.trim() : (phone ? String(phone) : '')
+		
+		// Проверка имени
+		if (!nameTrimmed || nameTrimmed.length === 0) {
+			toast.error('Пожалуйста, введите ваше имя')
 			return
 		}
 
-		if (!isPhoneValid) {
-			toast.error('Пожалуйста, введите полный номер телефона')
+		// Проверка телефона
+		if (!phoneValue || phoneValue.length === 0) {
+			toast.error('Пожалуйста, введите номер телефона')
+			return
+		}
+
+		// Используем более мягкую валидацию - проверяем isPossiblePhoneNumber
+		// Это позволит принимать номера, которые могут быть валидными, даже если они не полностью соответствуют формату
+		let phoneIsValid = false
+		try {
+			if (phoneValue && defaultCountry) {
+				phoneIsValid = isPossiblePhoneNumber(phoneValue, defaultCountry as CountryCode)
+				// Если isPossiblePhoneNumber вернул false, пробуем isValidPhoneNumber
+				if (!phoneIsValid) {
+					phoneIsValid = isValidPhoneNumber(phoneValue, defaultCountry as CountryCode)
+				}
+			} else if (phoneValue) {
+				phoneIsValid = isPossiblePhoneNumber(phoneValue)
+				if (!phoneIsValid) {
+					phoneIsValid = isValidPhoneNumber(phoneValue)
+				}
+			}
+		} catch (error) {
+			// Если произошла ошибка при валидации, считаем номер невалидным
+			phoneIsValid = false
+		}
+
+		// Более мягкая проверка - если номер выглядит как возможный (минимум 7 цифр), разрешаем отправку
+		if (!phoneIsValid && phoneValue) {
+			const digitsOnly = phoneValue.replace(/\D/g, '')
+			if (digitsOnly.length >= 7) {
+				phoneIsValid = true
+			}
+		}
+
+		if (!phoneIsValid) {
+			toast.error('Пожалуйста, введите корректный номер телефона')
 			return
 		}
 
@@ -310,8 +350,8 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 
 		try {
 			await sendFormData({
-				name: name.trim(),
-				phone: phone as string,
+				name: nameTrimmed,
+				phone: phoneValue,
 				telegram: normalizedTelegram,
 				orderNumber: orderNumber,
 			})
@@ -440,8 +480,11 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 								fullWidth
 								placeholder='Ваше имя*'
 								variant='standard'
-								value={name}
-								onChange={e => setName(e.target.value)}
+								value={name || ''}
+								onChange={e => {
+									const value = e.target.value || ''
+									setName(value)
+								}}
 								disabled={loading}
 								required
 								InputProps={{
@@ -537,7 +580,13 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 									defaultCountry={defaultCountry as any}
 									value={phone}
 									onChange={(value) => {
-										if (!value) {
+										if (!value || value.trim() === '') {
+											setPhone(undefined)
+											return
+										}
+
+										const trimmedValue = value.trim()
+										if (!trimmedValue) {
 											setPhone(undefined)
 											return
 										}
@@ -545,16 +594,16 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 										const country = defaultCountry as CountryCode | undefined
 										
 										if (country) {
-											if (!canAddMoreDigits(value, country)) {
+											if (!canAddMoreDigits(trimmedValue, country)) {
 												return
 											}
 											
-											if (exceedsMaxLength(value, country)) {
+											if (exceedsMaxLength(trimmedValue, country)) {
 												return
 											}
 										}
 
-										setPhone(value)
+										setPhone(trimmedValue)
 									}}
 									disabled={loading}
 									limitMaxLength={true}
