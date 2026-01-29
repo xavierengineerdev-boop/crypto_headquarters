@@ -17,6 +17,7 @@ import { createContext, useContext, useState } from 'react'
 interface SuccessOverlayContextType {
 	showSuccessOverlay: () => string
 	currentOrderNumber: string
+	successOverlayOpen: boolean
 }
 
 const SuccessOverlayContext = createContext<SuccessOverlayContextType | null>(null)
@@ -50,10 +51,15 @@ const App = () => {
 	const hideSuccessOverlay = () => {
 		setSuccessOverlayOpen(false)
 		setCurrentOrderNumber('')
+		
+		// Прокручиваем страницу наверх после закрытия overlay
+		setTimeout(() => {
+			window.scrollTo({ top: 0, behavior: 'smooth' })
+		}, 100)
 	}
 
 	return (
-		<SuccessOverlayContext.Provider value={{ showSuccessOverlay, currentOrderNumber }}>
+		<SuccessOverlayContext.Provider value={{ showSuccessOverlay, currentOrderNumber, successOverlayOpen }}>
 			<>
 				<Box
 					sx={{
@@ -61,15 +67,27 @@ const App = () => {
 						display: 'flex',
 						flexDirection: 'column',
 						alignItems: 'center',
+						overflowX: 'hidden',
+						width: '100%',
 					}}
 				>
-					<WeBlock />
-					<ResultsBlock />
+					<Box id="who-we-are">
+						<WeBlock />
+					</Box>
+					<Box id="results">
+						<ResultsBlock />
+					</Box>
 					<WhyUsBlock />
-					<SpecialBlock />
-					<SliderBlock />
+					<Box id="offer">
+						<SpecialBlock />
+					</Box>
+					<Box id="reviews">
+						<SliderBlock />
+					</Box>
 					<FAQBlock />
-					<QuestionBlock />
+					<Box id="contacts">
+						<QuestionBlock />
+					</Box>
 					<Footer />
 				</Box>
 

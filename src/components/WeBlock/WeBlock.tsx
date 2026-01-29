@@ -4,12 +4,12 @@ import { useState } from 'react'
 import ModalBlock from '../ModalBlock'
 
 const MENU = [
-	{ label: 'Кто мы?', highlighted: true },
-	{ label: 'Партнеры' },
-	{ label: 'Результаты' },
-	{ label: 'Оффер' },
-	{ label: 'Отзывы' },
-	{ label: 'Контакты' },
+	{ label: 'Кто мы?', highlighted: true, anchor: 'who-we-are' },
+	{ label: 'Партнеры', anchor: 'partners' },
+	{ label: 'Результаты', anchor: 'results' },
+	{ label: 'Оффер', anchor: 'offer' },
+	{ label: 'Отзывы', anchor: 'reviews' },
+	{ label: 'Контакты', anchor: 'contacts' },
 ]
 
 const images = ['/bybit.png', '/binance.png', '/okx.png', '/binary.png']
@@ -57,6 +57,12 @@ const WeBlock = () => {
 						<Typography
 							key={index}
 							component='li'
+							onClick={() => {
+								const element = document.getElementById(item.anchor || '')
+								if (element) {
+									element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+								}
+							}}
 							sx={{
 								fontFamily: 'Montserrat',
 								fontSize: '15px',
@@ -65,6 +71,9 @@ const WeBlock = () => {
 								color: item.highlighted ? '#93FA00' : 'inherit',
 								listStyle: 'none',
 								cursor: 'pointer',
+								'&:hover': {
+									color: '#93FA00',
+								},
 							}}
 						>
 							{item.label}
@@ -257,6 +266,7 @@ const WeBlock = () => {
 				</Box>
 			</Box>
 			<Box
+				id="partners"
 				sx={{
 					px: '16px',
 					mt: '-30px',

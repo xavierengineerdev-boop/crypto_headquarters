@@ -11,7 +11,9 @@ import { useState, useEffect, useRef } from 'react'
 import { toast } from 'react-toastify'
 import { sendFormData } from '@/api/api'
 import PhoneInput from 'react-phone-number-input'
-import { isValidPhoneNumber } from 'react-phone-number-input'
+import { isValidPhoneNumber, isPossiblePhoneNumber } from 'react-phone-number-input'
+import { parsePhoneNumber, type CountryCode } from 'libphonenumber-js'
+import { canAddMoreDigits, exceedsMaxLength, validatePhoneNumber, getPhoneValidationRules } from '@/utils/phoneValidation'
 import 'react-phone-number-input/style.css'
 import { useSuccessOverlay } from '@/App'
 
@@ -28,7 +30,8 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 	const [defaultCountry, setDefaultCountry] = useState<string | undefined>(undefined)
 	const [isPhoneValid, setIsPhoneValid] = useState(false)
 	const phoneInputRef = useRef<HTMLDivElement>(null)
-	const { showSuccessOverlay, currentOrderNumber } = useSuccessOverlay()
+	const { showSuccessOverlay, currentOrderNumber, successOverlayOpen } = useSuccessOverlay()
+	const [submittedOrderNumber, setSubmittedOrderNumber] = useState<string | null>(null)
 
 	// Определение страны по IP при открытии модального окна (чтобы учитывать VPN)
 	useEffect(() => {
@@ -40,7 +43,7 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 			const timestamp = Date.now()
 			const countryResults: string[] = []
 
-			// API 1: ip-api.com (надежный и бесплатный)
+			// API 1: ip-api.com (может возвращать 403 при частых запросах)
 			try {
 				const response = await fetch(`https://ip-api.com/json/?fields=countryCode&_=${timestamp}`, {
 					method: 'GET',
@@ -50,17 +53,17 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 					cache: 'no-store',
 				})
 				
-				if (response.ok) {
+				if (response.ok && response.status === 200) {
 					const data = await response.json()
 					if (data.countryCode) {
 						countryResults.push(data.countryCode.toUpperCase())
 					}
 				}
 			} catch (apiError) {
-				// Игнорируем ошибку
+				// Игнорируем ошибку (403, CORS и т.д.)
 			}
 
-			// API 2: ipapi.co
+			// API 2: ipapi.co (может возвращать 429 при частых запросах и CORS ошибки)
 			try {
 				const response = await fetch(`https://ipapi.co/json/?_=${timestamp}`, {
 					method: 'GET',
@@ -69,17 +72,17 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 					},
 					cache: 'no-store',
 				})
-				if (response.ok) {
+				if (response.ok && response.status === 200) {
 					const data = await response.json()
 					if (data.country_code) {
 						countryResults.push(data.country_code.toUpperCase())
 					}
 				}
 			} catch (apiError) {
-				// Игнорируем ошибку
+				// Игнорируем ошибку (429, CORS и т.д.)
 			}
 
-			// API 3: ipwho.is (бесплатный, без лимитов)
+			// API 3: ipwho.is (более надежный, без лимитов)
 			try {
 				const response = await fetch(`https://ipwho.is/?_=${timestamp}`, {
 					method: 'GET',
@@ -88,7 +91,7 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 					},
 					cache: 'no-store',
 				})
-				if (response.ok) {
+				if (response.ok && response.status === 200) {
 					const data = await response.json()
 					if (data.country_code) {
 						countryResults.push(data.country_code.toUpperCase())
@@ -196,92 +199,127 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 		detectCountry()
 	}, [open])
 
-	// Контроль максимальной длины номера телефона (13 символов включая + и код страны)
+	// Блокировка ввода лишних символов через DOM события
 	useEffect(() => {
-		if (phone) {
-			const cleanValue = phone.replace(/[\s\-()]/g, '')
-			if (cleanValue.length > 13) {
-				// Немедленно обрезаем до 13 символов
-				const trimmed = cleanValue.substring(0, 13)
-				if (trimmed !== phone) {
-					setPhone(trimmed)
-				}
-			}
-		}
-	}, [phone])
+		if (!phoneInputRef.current || !defaultCountry || !phone || !open) return
 
-	// Прямой контроль через DOM для предотвращения ввода лишних символов
-	useEffect(() => {
-		const checkAndLimitInput = () => {
-			if (phoneInputRef.current) {
-				const input = phoneInputRef.current.querySelector('.PhoneInputInput') as HTMLInputElement
-				if (input) {
-					// Блокируем ввод клавиш, если уже достигнут лимит
-					const handleKeyDown = (e: KeyboardEvent) => {
-						const currentValue = input.value || ''
-						const cleanValue = currentValue.replace(/[\s\-()]/g, '')
-						
-						// Разрешаем удаление (Backspace, Delete) и навигацию
-						if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'].includes(e.key)) {
-							return
-						}
-						
-						// Если уже достигнут лимит, блокируем ввод
-						if (cleanValue.length >= 13) {
-							e.preventDefault()
-							e.stopPropagation()
-							return false
-						}
-					}
+		const input = phoneInputRef.current.querySelector('.PhoneInputInput') as HTMLInputElement
+		if (!input) return
 
-					// Блокируем ввод через beforeinput
-					const handleBeforeInput = (e: any) => {
-						const currentValue = input.value || ''
-						const cleanValue = currentValue.replace(/[\s\-()]/g, '')
-						if (cleanValue.length >= 13 && e.data) {
-							e.preventDefault()
-							return false
-						}
-					}
-
-					// Контролируем ввод после того, как он произошел
-					const handleInput = () => {
-						const currentValue = input.value || ''
-						const cleanValue = currentValue.replace(/[\s\-()]/g, '')
-						
-						if (cleanValue.length > 13) {
-							// Обрезаем до 13 символов
-							const trimmed = cleanValue.substring(0, 13)
-							setPhone(trimmed)
-						}
-					}
-
-					input.addEventListener('keydown', handleKeyDown, true)
-					input.addEventListener('beforeinput', handleBeforeInput, true)
-					input.addEventListener('input', handleInput, true)
-
-					return () => {
-						input.removeEventListener('keydown', handleKeyDown, true)
-						input.removeEventListener('beforeinput', handleBeforeInput, true)
-						input.removeEventListener('input', handleInput, true)
-					}
+		const handleBeforeInput = (e: any) => {
+			const currentValue = input.value || phone
+			
+			// Проверяем, может ли новый номер быть возможным
+			if (defaultCountry) {
+				// Создаем временное значение с новым символом
+				const testValue = currentValue.slice(0, input.selectionStart || 0) + 
+					(e.data || '') + 
+					currentValue.slice(input.selectionEnd || 0)
+				
+				// Используем утилиту для проверки
+				if (!canAddMoreDigits(testValue, defaultCountry as CountryCode) || 
+					exceedsMaxLength(testValue, defaultCountry as CountryCode)) {
+					// Номер превысит максимум - блокируем ввод
+					e.preventDefault()
+					return false
 				}
 			}
 		}
 
-		const timeoutId = setTimeout(checkAndLimitInput, 100)
-		return () => clearTimeout(timeoutId)
-	}, [phone])
+		const handleInput = () => {
+			const currentValue = input.value
+			
+			if (defaultCountry && currentValue) {
+				// Используем утилиту для проверки
+				if (!canAddMoreDigits(currentValue, defaultCountry as CountryCode) || 
+					exceedsMaxLength(currentValue, defaultCountry as CountryCode)) {
+					// Восстанавливаем предыдущее значение
+					setTimeout(() => {
+						if (input && phone) {
+							input.value = phone
+							setPhone(phone)
+						}
+					}, 0)
+				}
+			}
+		}
 
-	// Валидация номера телефона
+		input.addEventListener('beforeinput', handleBeforeInput, true)
+		input.addEventListener('input', handleInput, true)
+
+		return () => {
+			input.removeEventListener('beforeinput', handleBeforeInput, true)
+			input.removeEventListener('input', handleInput, true)
+		}
+	}, [phone, defaultCountry, open])
+
+	// Валидация номера телефона с проверкой длины для выбранной страны
 	useEffect(() => {
-		if (phone) {
-			const isValid = isValidPhoneNumber(phone, defaultCountry as any)
+		if (phone && defaultCountry) {
+			let finalIsValid = false
+			
+			try {
+				// Сначала проверяем длину через parsePhoneNumber
+				const phoneNumber = parsePhoneNumber(phone, defaultCountry as CountryCode)
+				if (phoneNumber) {
+					const rules = getPhoneValidationRules(defaultCountry as CountryCode)
+					if (rules) {
+						const nationalNumberLength = phoneNumber.nationalNumber.length
+						
+						// Номер должен иметь правильную длину (минимум для страны)
+						if (nationalNumberLength < rules.minLength) {
+							// Номер слишком короткий - невалиден
+							finalIsValid = false
+						} else if (nationalNumberLength > rules.maxLength) {
+							// Номер слишком длинный - невалиден
+							finalIsValid = false
+						} else {
+							// Длина правильная, проверяем валидность через isValidPhoneNumber
+							finalIsValid = isValidPhoneNumber(phone, defaultCountry as CountryCode)
+						}
+					} else {
+						// Если нет правил, используем стандартную проверку
+						finalIsValid = isValidPhoneNumber(phone, defaultCountry as CountryCode)
+					}
+				} else {
+					// Если не удалось распарсить, номер невалиден
+					finalIsValid = false
+				}
+			} catch {
+				// Если произошла ошибка при парсинге, номер невалиден
+				finalIsValid = false
+			}
+			
+			setIsPhoneValid(finalIsValid)
+		} else if (phone) {
+			// Если страна не определена, проверяем общую валидность
+			const isValid = isValidPhoneNumber(phone)
 			setIsPhoneValid(isValid)
 		} else {
 			setIsPhoneValid(false)
 		}
 	}, [phone, defaultCountry])
+
+	// Отслеживаем открытие overlay
+	useEffect(() => {
+		if (successOverlayOpen && currentOrderNumber) {
+			setSubmittedOrderNumber(currentOrderNumber)
+		}
+	}, [successOverlayOpen, currentOrderNumber])
+
+	// Очистка формы и закрытие модального окна после закрытия SuccessOverlay
+	useEffect(() => {
+		if (submittedOrderNumber && !successOverlayOpen) {
+			// Overlay был открыт и теперь закрылся, очищаем форму и закрываем модальное окно
+			setName('')
+			setPhone('')
+			setTelegram('')
+			setSubmittedOrderNumber(null)
+			setTimeout(() => {
+				onClose()
+			}, 100)
+		}
+	}, [submittedOrderNumber, successOverlayOpen, onClose])
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
@@ -319,13 +357,8 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 				orderNumber: orderNumber,
 			})
 
-			setName('')
-			setPhone('')
-			setTelegram('')
-
-			setTimeout(() => {
-				onClose()
-			}, 2000)
+			// Поля очистятся после закрытия SuccessOverlay
+			// Модальное окно закроется после закрытия SuccessOverlay
 		} catch (err: any) {
 			toast.error(err.message || 'Произошла ошибка при отправке формы')
 		} finally {
@@ -553,21 +586,28 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 											setPhone(undefined)
 											return
 										}
-										// Ограничение: максимум 13 символов включая + и код страны
-										// Убираем все пробелы, дефисы и другие символы форматирования
-										const cleanValue = value.replace(/[\s\-()]/g, '')
+
+										const country = defaultCountry as CountryCode | undefined
 										
-										// Всегда обрезаем до 13 символов, если превышен лимит
-										if (cleanValue.length > 13) {
-											const trimmed = cleanValue.substring(0, 13)
-											// Используем setTimeout для немедленного обновления
-											setTimeout(() => setPhone(trimmed), 0)
-										} else {
-											setPhone(value)
+										// Используем утилиту для проверки
+										if (country) {
+											// Проверяем, можно ли добавить еще цифры
+											if (!canAddMoreDigits(value, country)) {
+												// Номер превысил максимум - блокируем ввод
+												return
+											}
+											
+											// Проверяем, превысил ли номер максимальную длину
+											if (exceedsMaxLength(value, country)) {
+												// Номер превысил максимум - блокируем ввод
+												return
+											}
 										}
+
+										setPhone(value)
 									}}
 									disabled={loading}
-									placeholder='Номер телефона*'
+									limitMaxLength={true}
 								/>
 							</Box>
 						</Box>

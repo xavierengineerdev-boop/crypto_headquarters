@@ -8,7 +8,7 @@ const SliderBlock = () => {
 	const totalWidth = (slideWidth + gap) * slides.length
 
 	return (
-		<Box sx={{ width: '100%', py: '40px', overflow: 'hidden' }}>
+		<Box sx={{ width: '100%', py: '40px', overflow: 'hidden', position: 'relative' }}>
 			<Box sx={{ maxWidth: '1040px', width: '100%', mx: 'auto', pb: '40px', px: '16px' }}>
 				<Typography
 					sx={{
@@ -33,12 +33,13 @@ const SliderBlock = () => {
 					Реальные отзывы от реальных людей
 				</Typography>
 			</Box>
-			<Box sx={{ width: '100%', overflow: 'hidden' }}>
+			<Box sx={{ width: '100%', overflow: 'hidden', position: 'relative' }}>
 				<Box
 					sx={{
 						overflow: 'hidden',
 						width: '100%',
 						cursor: 'default',
+						position: 'relative',
 					}}
 				>
 					<Box

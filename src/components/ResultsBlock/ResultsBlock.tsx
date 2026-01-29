@@ -49,7 +49,7 @@ const ResultsBlock = () => {
 				}}
 			>
 				{results.map((result, index) => (
-					<Box>
+					<Box key={index}>
 						<Typography
 							sx={{
 								fontFamily: 'Dela Gothic One',
