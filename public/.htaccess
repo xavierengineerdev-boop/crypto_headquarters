@@ -2,14 +2,21 @@
   RewriteEngine On
   RewriteBase /
   
-  # Не перенаправляем запросы к существующим файлам и директориям
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
+  # ВАЖНО: Сначала проверяем, что файл НЕ существует
+  # Если файл существует - отдаем его как есть
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+  
+  # Если это директория - отдаем как есть
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
   
   # Не перенаправляем запросы к статическим файлам (JS, CSS, изображения и т.д.)
-  RewriteCond %{REQUEST_URI} !\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$
+  # Это дополнительная защита на случай, если файл не найден
+  RewriteCond %{REQUEST_URI} \.(js|mjs|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json|map)$ [NC]
+  RewriteRule ^ - [L]
   
-  # Перенаправляем все остальные запросы на index.html
+  # Перенаправляем все остальные запросы на index.html (для SPA)
   RewriteRule ^ index.html [L]
 </IfModule>
 
