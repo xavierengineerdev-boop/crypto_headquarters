@@ -520,27 +520,32 @@ const QuestionBlock = () => {
 			</Box>
 			<Button
 				variant='contained'
-				disabled={loading || !isPhoneValid}
+				disabled={loading}
 				onClick={(e) => {
-					e.preventDefault()
-					e.stopPropagation()
-					if (!loading && isPhoneValid && phone) {
+					if (!loading) {
+						e.preventDefault()
+						e.stopPropagation()
 						handleSubmit(e as any)
 					}
 				}}
 				onTouchStart={(e) => {
-					if (!loading && isPhoneValid && phone) {
-						e.stopPropagation()
+					// Синхронизируем значения перед отправкой на мобильных
+					if (!loading && phoneInputRef.current) {
+						const input = phoneInputRef.current.querySelector('.PhoneInputInput') as HTMLInputElement
+						if (input && input.value && input.value !== phone) {
+							setPhone(input.value as any)
+						}
 					}
 				}}
 				onTouchEnd={(e) => {
-					e.preventDefault()
-					e.stopPropagation()
-					if (!loading && isPhoneValid && phone) {
+					if (!loading) {
+						e.preventDefault()
+						e.stopPropagation()
 						const syntheticEvent = {
 							preventDefault: () => {},
 							stopPropagation: () => {},
 						} as React.FormEvent
+						// handleSubmit сам прочитает значение из DOM
 						handleSubmit(syntheticEvent)
 					}
 				}}
