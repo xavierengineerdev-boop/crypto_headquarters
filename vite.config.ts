@@ -42,6 +42,8 @@ export default defineConfig({
 				},
 			},
 		},
+		// Копируем .htaccess в dist
+		copyPublicDir: true,
 	},
 	optimizeDeps: {
 		include: ['react', 'react-dom', 'react-router-dom'],

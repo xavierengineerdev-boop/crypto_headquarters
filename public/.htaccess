@@ -1,0 +1,33 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  
+  # Не перенаправляем запросы к существующим файлам и директориям
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  
+  # Не перенаправляем запросы к статическим файлам (JS, CSS, изображения и т.д.)
+  RewriteCond %{REQUEST_URI} !\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$
+  
+  # Перенаправляем все остальные запросы на index.html
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Правильные MIME типы для JavaScript модулей
+<IfModule mod_mime.c>
+  AddType application/javascript js mjs
+  AddType text/css css
+</IfModule>
+
+# Кеширование статических файлов
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/jpg "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+</IfModule>
+
