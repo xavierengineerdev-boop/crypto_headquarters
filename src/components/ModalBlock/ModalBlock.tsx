@@ -286,9 +286,25 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 
+		// На мобильных устройствах PhoneInput может не синхронизировать значения правильно
+		// Читаем значение напрямую из DOM input элемента как fallback
+		let actualPhoneValue = phone
+		if (phoneInputRef.current) {
+			const input = phoneInputRef.current.querySelector('.PhoneInputInput') as HTMLInputElement
+			if (input && input.value) {
+				actualPhoneValue = input.value
+				// Синхронизируем state с реальным значением из DOM
+				if (actualPhoneValue !== phone) {
+					setPhone(actualPhoneValue as any)
+				}
+			}
+		}
+
 		// Более детальная проверка полей с учетом всех возможных значений
 		const nameTrimmed = (name && typeof name === 'string') ? name.trim() : ''
-		const phoneValue = (phone && typeof phone === 'string') ? phone.trim() : (phone ? String(phone) : '')
+		const phoneValue = (actualPhoneValue && typeof actualPhoneValue === 'string') 
+			? actualPhoneValue.trim() 
+			: (actualPhoneValue ? String(actualPhoneValue) : '')
 		
 		// Проверка имени
 		if (!nameTrimmed || nameTrimmed.length === 0) {
@@ -580,12 +596,13 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 									defaultCountry={defaultCountry as any}
 									value={phone}
 									onChange={(value) => {
-										if (!value || value.trim() === '') {
+										// Сохраняем значение сразу, без лишних проверок для мобильных устройств
+										if (!value) {
 											setPhone(undefined)
 											return
 										}
 
-										const trimmedValue = value.trim()
+										const trimmedValue = typeof value === 'string' ? value.trim() : String(value)
 										if (!trimmedValue) {
 											setPhone(undefined)
 											return
@@ -595,15 +612,27 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 										
 										if (country) {
 											if (!canAddMoreDigits(trimmedValue, country)) {
+												// Не блокируем, просто не обновляем state
 												return
 											}
 											
 											if (exceedsMaxLength(trimmedValue, country)) {
+												// Не блокируем, просто не обновляем state
 												return
 											}
 										}
 
+										// Всегда обновляем state с реальным значением
 										setPhone(trimmedValue)
+									}}
+									onBlur={() => {
+										// При потере фокуса синхронизируем значение из DOM
+										if (phoneInputRef.current) {
+											const input = phoneInputRef.current.querySelector('.PhoneInputInput') as HTMLInputElement
+											if (input && input.value && input.value !== phone) {
+												setPhone(input.value as any)
+											}
+										}
 									}}
 									disabled={loading}
 									limitMaxLength={true}
@@ -673,6 +702,21 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 							type='submit'
 							variant='contained'
 							disabled={loading}
+							onClick={(e) => {
+								// Для десктопа - стандартная обработка через форму
+								if (!loading) {
+									// Форма сама вызовет handleSubmit через onSubmit
+								}
+							}}
+							onTouchStart={(e) => {
+								// Синхронизируем значения перед отправкой на мобильных
+								if (!loading && phoneInputRef.current) {
+									const input = phoneInputRef.current.querySelector('.PhoneInputInput') as HTMLInputElement
+									if (input && input.value && input.value !== phone) {
+										setPhone(input.value as any)
+									}
+								}
+							}}
 							onTouchEnd={(e) => {
 								if (!loading) {
 									e.preventDefault()
@@ -681,6 +725,7 @@ const ModalBlock = ({ open, onClose }: ModalBlockProps) => {
 										preventDefault: () => {},
 										stopPropagation: () => {},
 									} as React.FormEvent
+									// handleSubmit сам прочитает значение из DOM
 									handleSubmit(syntheticEvent)
 								}
 							}}

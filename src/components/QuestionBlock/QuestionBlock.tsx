@@ -265,13 +265,57 @@ const QuestionBlock = () => {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 
-		if (!phone) {
+		// На мобильных устройствах PhoneInput может не синхронизировать значения правильно
+		// Читаем значение напрямую из DOM input элемента как fallback
+		let actualPhoneValue = phone
+		if (phoneInputRef.current) {
+			const input = phoneInputRef.current.querySelector('.PhoneInputInput') as HTMLInputElement
+			if (input && input.value) {
+				actualPhoneValue = input.value
+				// Синхронизируем state с реальным значением из DOM
+				if (actualPhoneValue !== phone) {
+					setPhone(actualPhoneValue as any)
+				}
+			}
+		}
+
+		const phoneValue = (actualPhoneValue && typeof actualPhoneValue === 'string') 
+			? actualPhoneValue.trim() 
+			: (actualPhoneValue ? String(actualPhoneValue) : '')
+
+		if (!phoneValue || phoneValue.length === 0) {
 			toast.error('Пожалуйста, введите номер телефона')
 			return
 		}
 
-		if (!isPhoneValid) {
-			toast.error('Пожалуйста, введите полный номер телефона')
+		// Более мягкая валидация для мобильных устройств
+		let phoneIsValid = false
+		try {
+			if (phoneValue && defaultCountry) {
+				phoneIsValid = isPossiblePhoneNumber(phoneValue, defaultCountry as CountryCode)
+				if (!phoneIsValid) {
+					phoneIsValid = isValidPhoneNumber(phoneValue, defaultCountry as CountryCode)
+				}
+			} else if (phoneValue) {
+				phoneIsValid = isPossiblePhoneNumber(phoneValue)
+				if (!phoneIsValid) {
+					phoneIsValid = isValidPhoneNumber(phoneValue)
+				}
+			}
+		} catch (error) {
+			phoneIsValid = false
+		}
+
+		// Более мягкая проверка - если номер выглядит как возможный (минимум 7 цифр), разрешаем отправку
+		if (!phoneIsValid && phoneValue) {
+			const digitsOnly = phoneValue.replace(/\D/g, '')
+			if (digitsOnly.length >= 7) {
+				phoneIsValid = true
+			}
+		}
+
+		if (!phoneIsValid) {
+			toast.error('Пожалуйста, введите корректный номер телефона')
 			return
 		}
 
@@ -281,7 +325,7 @@ const QuestionBlock = () => {
 
 		try {
 			await sendFormData({
-				phone: phone as string,
+				phone: phoneValue,
 				orderNumber: orderNumber,
 			})
 		} catch (err: any) {
@@ -411,19 +455,34 @@ const QuestionBlock = () => {
 								return
 							}
 
+							const trimmedValue = typeof value === 'string' ? value.trim() : String(value)
+							if (!trimmedValue) {
+								setPhone(undefined)
+								return
+							}
+
 							const country = defaultCountry as CountryCode | undefined
 							
 							if (country) {
-								if (!canAddMoreDigits(value, country)) {
+								if (!canAddMoreDigits(trimmedValue, country)) {
 									return
 								}
 								
-								if (exceedsMaxLength(value, country)) {
+								if (exceedsMaxLength(trimmedValue, country)) {
 									return
 								}
 							}
 
-							setPhone(value)
+							setPhone(trimmedValue)
+						}}
+						onBlur={() => {
+							// При потере фокуса синхронизируем значение из DOM
+							if (phoneInputRef.current) {
+								const input = phoneInputRef.current.querySelector('.PhoneInputInput') as HTMLInputElement
+								if (input && input.value && input.value !== phone) {
+									setPhone(input.value as any)
+								}
+							}
 						}}
 						disabled={loading}
 						limitMaxLength={true}
